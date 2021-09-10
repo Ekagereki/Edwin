@@ -125,8 +125,7 @@ linear_regressor.fit(X, Y)  # perform linear regression
 Y_pred = linear_regressor.predict(X)  # make predictions
 Y_pred = Y_pred.tolist()
 print(Y_pred)
-"""
-"""
+
 #descriptive statistics
 print(round(quakes.describe().transpose(), 4))
 skewness = quakes.skew(axis=0, skipna=True)#skewness
@@ -176,8 +175,7 @@ rmse = np.sqrt(mse)#root mean square error for model assessment
 print('MAE: %.3f' % mae)
 print('RMSE: %.3f' % rmse)
 print('R squared: %.3f' %r2)
-'''
-'''
+
 def plot_loss(history):
   plt.plot(history.history['loss'], label='train')
   plt.plot(history.history['val_loss'], label='test')
