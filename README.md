@@ -1,1 +1,2 @@
-# `Neural network`
+* `Neural network`
+* `machine learning`
