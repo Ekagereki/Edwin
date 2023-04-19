@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.python.keras import layers, losses
 from sklearn.metrics import classification_report
 
-df = pd.read_csv('creditcard.csv')
+df = pd.read_csv('creditcard.csv') #https://www.kaggle.com/datasets/arockiaselciaa/creditcardcsv/code?resource=download
 
 #data preparation
 X, y = df.drop('Class', axis=1), df.Class
