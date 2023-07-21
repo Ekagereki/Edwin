@@ -1,0 +1,78 @@
+library(nnet)
+library(DataCombine)
+library(dplyr)
+library(NeuralNetTools)
+
+setwd("C:/Users/kager/Downloads")
+
+data <- read.csv("time_series_covid19_confirmed_global_narrow.csv", header=TRUE)
+#choosing Kenya data
+kenya_data = data[c(40966:41233),]
+date <- as.Date(kenya_data$Date,format="%m/%d/%y")
+confirmed_cases = as.numeric(kenya_data$Value)
+
+#plot cumulative cases vs time
+plot(date, confirmed_cases, type = "l", ylab = "confirmed cases", 
+     xlab = "Time", main = "Cumulitative cases vs time")
+
+df = data.frame(date, confirmed_cases)
+df = arrange(df, date)
+#introducing the inputs
+df <- slide(df, "confirmed_cases", NewVar="xlag1", slideBy=-1)
+df <- slide(df, "confirmed_cases", NewVar="xlag2", slideBy=-2)
+df <- slide(df, "confirmed_cases", NewVar="xlag3", slideBy=-3)
+
+#plotting histograms for confirmed_cases, xlag1, xlag2, xlag3
+hist(confirmed_cases)
+hist(df$xlag1)
+hist(df$xlag2)
+hist(df$xlag3)
+
+#data pre-processing, normalization and splitting into training and testing
+df = na.omit(df)
+x_t = (df$confirmed_cases - min(df$confirmed_cases)) / (max(df$confirmed_cases) - min(df$confirmed_cases))
+x_t_1 = (df$xlag1 - min(df$xlag1)) / (max(df$xlag1) - min(df$xlag1))
+x_t_2 = (df$xlag2 - min(df$xlag2)) / (max(df$xlag2) - min(df$xlag2))
+x_t_3 = (df$xlag3 - min(df$xlag3)) / (max(df$xlag3) - min(df$xlag3))
+
+#plotting histogram to see the distribution of x_t, x_t_1, x_t_2, x_t_3
+hist(x_t)
+hist(x_t_1)
+hist(x_t_2)
+hist(x_t_3)
+
+df1 = data.frame(x_t, x_t_1, x_t_2, x_t_3)
+
+set.seed(123)
+train_indices = sample(1:nrow(df1), 0.75 * nrow(df1))
+train_data = df1[train_indices, ]
+test_data = df1[-train_indices, ]
+
+#building neural network model using nnet
+model = nnet(x_t ~ x_t_1 + x_t_2 + x_t_3, data = train_data, size=4, rang=0.1, 
+             decay=5e-04, maxit=200, trace=FALSE, linout=TRUE)
+summary(model)
+
+predictions = predict(model, newdata = test_data)
+
+# Evaluate the model's performance
+actual_values = test_data$x_t
+mse = mean((predictions - actual_values)^2)
+mae = mean(abs(predictions - actual_values))
+rsquared = 1 - sum((actual_values - predictions)^2) / sum((actual_values - mean(actual_values))^2)
+#scatter plot of actual_values vs predictions
+plot(actual_values, predictions, type = "l")
+
+#Variables Importance
+# Y = confirmed cases
+olden(model, out_var = "x_t", bar_plot = TRUE)
+
+plotnet(model)
+
+#plotting expectation vs time
+predicted = model$fitted.values
+expected_confirmed = ((predictions * (max(df$confirmed_cases) - min(df$confirmed_cases))
+                       + min(df$confirmed_cases)))
+df3 = data.frame(expected_confirmed, df[-train_indices,])
+plot(df3$date, df3$expected_confirmed, type = "l", xlab = "Time", 
+     ylab = "confirmed cases", main = "cumulitative expected confirmed cases")
